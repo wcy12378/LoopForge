@@ -45,9 +45,13 @@ type TelemetryContext struct {
 	IssueNumber           int    `json:"issueNumber,omitempty"`
 	TaskID                string `json:"taskId,omitempty"`
 	ScheduleJobID         string `json:"scheduleJobId,omitempty"`
-	RunID                 string `json:"runId"`
-	ParentRunID           string `json:"parentRunId,omitempty"`
-	ParentNodeID          string `json:"parentNodeId,omitempty"`
+	// ScheduleExecutionID names the schedule execution this context belongs to
+	// ("sjx-<trace>"). The server derives it from the persisted Run context and
+	// overwrites any worker-reported value; empty for manual or legacy runs.
+	ScheduleExecutionID string `json:"scheduleExecutionId,omitempty"`
+	RunID               string `json:"runId"`
+	ParentRunID         string `json:"parentRunId,omitempty"`
+	ParentNodeID        string `json:"parentNodeId,omitempty"`
 	// WorkspaceRunID names the run that owns the workspace a child SOP works
 	// in: the top-level run of its SOP chain. Empty means the run owns its
 	// own workspace.

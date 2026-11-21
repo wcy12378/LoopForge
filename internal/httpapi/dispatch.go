@@ -14,8 +14,11 @@ import (
 
 type dispatchRequest struct {
 	IssueID, WorkflowID, ScheduleJobID, TriggerOrigin string
-	Rerun                                             bool
-	TriggerUserID                                     int64
+	// ScheduleExecutionID is server-derived attribution for scheduled
+	// dispatches only. Public manual dispatch never sets it.
+	ScheduleExecutionID string
+	Rerun               bool
+	TriggerUserID       int64
 }
 
 func dispatchIssue(d *deps, req dispatchRequest) (domain.Task, error) {
@@ -188,7 +191,7 @@ func dispatchIssue(d *deps, req dispatchRequest) (domain.Task, error) {
 	if len(repositories) > 0 {
 		displayRepository = repositories[0]
 	}
-	task := domain.Task{ID: taskID, IssueID: issue.ID, AgentID: issue.AssigneeID, WorkflowID: workflowID, Status: "queued", Repository: displayRepository, DispatchMode: dispatchMode, ScheduleJobID: strings.TrimSpace(req.ScheduleJobID), TriggerOrigin: triggerOrigin}
+	task := domain.Task{ID: taskID, IssueID: issue.ID, AgentID: issue.AssigneeID, WorkflowID: workflowID, Status: "queued", Repository: displayRepository, DispatchMode: dispatchMode, ScheduleJobID: strings.TrimSpace(req.ScheduleJobID), ScheduleExecutionID: req.ScheduleExecutionID, TriggerOrigin: triggerOrigin}
 	stored, created, err := d.repo.ReserveIssueDispatch(task)
 	if err != nil {
 		if errors.Is(err, repo.ErrIssueNotFound) {
@@ -210,7 +213,7 @@ func dispatchIssue(d *deps, req dispatchRequest) (domain.Task, error) {
 		return domain.Task{}, err
 	}
 	tapdID := issue.RequirementTAPDID()
-	run, err := d.engine.StartWithRepositoriesContext(workflowID, input, repositories, domain.TelemetryContext{ProjectID: issue.ProjectID, IssueID: issue.ID, TAPDID: tapdID, ResponsibleUserID: runUserID, IssueNumber: issue.Number, TaskID: taskID, ScheduleJobID: strings.TrimSpace(req.ScheduleJobID)})
+	run, err := d.engine.StartWithRepositoriesContext(workflowID, input, repositories, domain.TelemetryContext{ProjectID: issue.ProjectID, IssueID: issue.ID, TAPDID: tapdID, ResponsibleUserID: runUserID, IssueNumber: issue.Number, TaskID: taskID, ScheduleJobID: strings.TrimSpace(req.ScheduleJobID), ScheduleExecutionID: req.ScheduleExecutionID})
 	if err != nil {
 		task.Status = "failed"
 		_ = d.repo.PutTask(task)
